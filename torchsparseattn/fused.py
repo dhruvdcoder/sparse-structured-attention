@@ -86,7 +86,9 @@ class FusedProxFunction(ta.Function):
 
     @staticmethod
     def backward(ctx, dout):
-        return base_backward(ctx, dout, project_jv)
+        grad, _ = base_backward(ctx, dout, project_jv)
+
+        return grad, None, None
 
 
 fusedprox_function = FusedProxFunction.apply

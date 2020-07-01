@@ -4,11 +4,10 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 
-from . import Sparsemax, Fusedmax, Oscarmax
+from torchsparseattn import Sparsemax, Fusedmax
 
 
 class AttentionRegressor(nn.Module):
-
     def __init__(self, projection, n_features=100):
         super(AttentionRegressor, self).__init__()
         self.projection = projection
@@ -20,15 +19,14 @@ class AttentionRegressor(nn.Module):
         # compute scores for each input word
         scores = torch.matmul(X, self.attn_template)
         weights = self.projection(scores, lengths)
-        weighted_avg = torch.bmm(X.transpose(1, 2),
-                                 weights.unsqueeze(-1)).squeeze(-1)
+        weighted_avg = torch.bmm(X.transpose(
+            1, 2), weights.unsqueeze(-1)).squeeze(-1)
         pred = weighted_avg.sum(dim=1)  # very simple prediction rule
+
         return pred
 
 
-@pytest.mark.parametrize('projection', [Sparsemax(),
-                                        Fusedmax(0.1),
-                                        Oscarmax(0.01)])
+@pytest.mark.parametrize("projection", [Sparsemax(), Fusedmax(0.1)])
 def test_attention(projection):
     n_samples = 20
     max_len = 10
@@ -41,7 +39,7 @@ def test_attention(projection):
     lengths = 1 + (torch.rand(n_samples) * max_len).long()
 
     for i in range(n_samples):
-        X[i, :lengths[i], :] = torch.randn(lengths[i], n_features)
+        X[i, : lengths[i], :] = torch.randn(lengths[i], n_features)
 
     X = Variable(X)
     lengths = Variable(lengths)

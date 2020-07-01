@@ -72,7 +72,7 @@ def base_forward(ctx, x, project, lengths=None):
     if requires_squeeze:
         y_star = y_star.squeeze()
 
-    ctx.mark_non_differentiable(y_star)
+    #ctx.mark_non_differentiable(y_star)
 
     if has_lengths:
         ctx.mark_non_differentiable(lengths)

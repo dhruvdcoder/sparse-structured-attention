@@ -5,8 +5,8 @@ from numpy.testing import assert_allclose
 import torch
 from torch.autograd import gradcheck, Variable
 
-from .fused import fused_prox_jv_slow, fused_prox_jv_fast
-from .fused import FusedProxFunction
+from torchsparseattn.fused import fused_prox_jv_slow, fused_prox_jv_fast
+from torchsparseattn.fused import fusedprox_function
 
 
 def _fused_prox_jacobian(y_hat, dout=None):
@@ -35,18 +35,17 @@ def _fused_prox_jacobian(y_hat, dout=None):
         return J
 
 
-@pytest.mark.parametrize('alpha', [0.001, 0.01, 0.1, 1])
+@pytest.mark.parametrize("alpha", [0.001, 0.01, 0.1, 1])
 def test_jv(alpha):
 
     torch.manual_seed(1)
-    torch.set_default_tensor_type('torch.DoubleTensor')
+    torch.set_default_tensor_type("torch.DoubleTensor")
 
     for _ in range(30):
         x = Variable(torch.randn(15))
         dout = torch.randn(15)
 
-        y_hat = FusedProxFunction(alpha=alpha)(x).data
-
+        y_hat = fusedprox_function(x, alpha)
 
         ref = _fused_prox_jacobian(y_hat, dout)
         din_slow = fused_prox_jv_slow(y_hat, dout)
@@ -55,12 +54,12 @@ def test_jv(alpha):
         assert_allclose(ref.numpy(), din_fast.numpy(), atol=1e-5)
 
 
-@pytest.mark.parametrize('alpha', [0.001, 0.01, 0.1, 1])
+@pytest.mark.parametrize("alpha", [0.001, 0.01, 0.1, 1])
 def test_finite_diff(alpha):
     torch.manual_seed(1)
-    torch.set_default_tensor_type('torch.DoubleTensor')
+    torch.set_default_tensor_type("torch.DoubleTensor")
 
     for _ in range(30):
         x = Variable(torch.randn(20), requires_grad=True)
-        func = FusedProxFunction(alpha=alpha)
+        def func(x): return fusedprox_function(x, alpha)
         assert gradcheck(func, (x,), eps=1e-4, atol=1e-3)
