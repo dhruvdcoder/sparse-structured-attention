@@ -11,7 +11,8 @@ from __future__ import division
 import numpy as np
 import torch
 from torch import nn
-from .base import _BaseBatchProjection
+from .base import base_forward, base_backward
+from torch.autograd import Function
 
 
 def project_simplex(v, z=1):
@@ -22,6 +23,7 @@ def project_simplex(v, z=1):
     rho = ind.masked_select(cond)[-1]
     tau = cssv.masked_select(cond)[-1] / rho
     w = torch.clamp(v - tau, min=0)
+
     return w
 
 
@@ -32,21 +34,24 @@ def sparsemax_grad(dout, w_star):
     masked -= masked.sum() / nnz
     out = dout.new(dout.size()).zero_()
     out[supp] = masked
-    return(out)
+
+    return out
 
 
-class SparsemaxFunction(_BaseBatchProjection):
+class SparsemaxFunction(Function):
+    @staticmethod
+    def forward(ctx, x, lengths=None):
+        return base_forward(ctx, x, project_simplex, lengths=lengths)
 
-    def project(self, x):
-        return project_simplex(x)
+    @staticmethod
+    def backward(ctx, dout):
+        return base_backward(ctx, dout, sparsemax_grad)
 
-    def project_jv(self, dout, y_star):
-        return sparsemax_grad(dout, y_star)
+
+sparsemax_function = SparsemaxFunction.apply
 
 
 class Sparsemax(nn.Module):
-
     def forward(self, x, lengths=None):
-        sparsemax = SparsemaxFunction()
-        return sparsemax(x, lengths)
 
+        return sparsemax_function(x, lengths)
