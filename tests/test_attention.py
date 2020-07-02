@@ -44,7 +44,7 @@ def test_attention(projection, device):
 
     X = X.clone().detach().requires_grad_(True).to(device=device)
     lengths = lengths.clone().detach().requires_grad_(False).to(device=device)
-    targets = torch.randn(n_samples)
+    targets = torch.randn(n_samples, device=device)
 
     regr = AttentionRegressor(
         projection, n_features=n_features).to(device=device)
