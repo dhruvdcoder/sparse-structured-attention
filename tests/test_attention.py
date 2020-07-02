@@ -27,26 +27,28 @@ class AttentionRegressor(nn.Module):
 
 
 @pytest.mark.parametrize("projection", [Sparsemax(), Fusedmax(0.1)])
-def test_attention(projection):
+def test_attention(projection, device):
     n_samples = 20
     max_len = 10
     torch.manual_seed(1)
     n_features = 50
 
-    X = torch.zeros(n_samples, max_len, n_features)
+    X = torch.zeros(n_samples, max_len, n_features, device=device)
 
     # generate lengths in [1, max_len]
-    lengths = 1 + (torch.rand(n_samples) * max_len).long()
+    lengths = 1 + (torch.rand(n_samples, device=device) * max_len).long()
 
     for i in range(n_samples):
-        X[i, : lengths[i], :] = torch.randn(lengths[i], n_features)
+        X[i, : lengths[i], :] = torch.randn(
+            lengths[i], n_features, device=device)
 
-    X = Variable(X)
-    lengths = Variable(lengths)
-    targets = Variable(torch.randn(n_samples))
+    X = X.clone().detach().requires_grad_(True).to(device=device)
+    lengths = lengths.clone().detach().requires_grad_(False)
+    targets = torch.randn(n_samples)
 
-    regr = AttentionRegressor(projection, n_features=n_features)
-    loss_func = nn.MSELoss()
+    regr = AttentionRegressor(
+        projection, n_features=n_features).to(device=device)
+    loss_func = nn.MSELoss().to(device=device)
     optim = torch.optim.SGD(regr.parameters(), lr=0.0001)
 
     pred = regr(X, lengths)
