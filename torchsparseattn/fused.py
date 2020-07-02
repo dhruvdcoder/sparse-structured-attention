@@ -59,13 +59,13 @@ def fused_prox_jv_slow(y_hat, dout):
 
 def fused_prox_jv_fast(y_hat, dout):
     dout = dout.clone()
-    _inplace_fused_prox_jv(y_hat.detach().numpy(), dout.numpy())
+    _inplace_fused_prox_jv(y_hat.detach().cpu().numpy(), dout.cpu().numpy())
 
     return dout
 
 
 def project(x, alpha):
-    x_np = x.detach().numpy().copy()
+    x_np = x.detach().cpu().numpy().copy()
     prox_tv1d(x_np, alpha)
     y_hat = torch.from_numpy(x_np)
 
@@ -74,7 +74,7 @@ def project(x, alpha):
 
 def project_jv(dout, y_hat):
     dout = dout.clone()
-    _inplace_fused_prox_jv(y_hat.detach().numpy(), dout.numpy())
+    _inplace_fused_prox_jv(y_hat.detach().cpu().numpy(), dout.cpu().numpy())
 
     return dout
 
